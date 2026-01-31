@@ -53,7 +53,16 @@ def auto_evaluate(evaluation_id):
             "comparison": {{
                 "accuracy": "Compare A and B behavior...",
                 "instructions": "Compare A and B behavior...",
-                "tone": "Compare A and B behavior..."
+                "tone": "Compare A and B behavior...",
+                "overall": "Which response is better overall, and why?",
+                "naming_clarity": "Which code has better naming and clarity?",
+                "organization_modularity": "Which code has better organization and modularity?",
+                "error_handling": "Which code has better error handling and robustness?",
+                "documentation": "Which code has better comments and documentation?",
+                "review_readiness": "Which code is more ready for review/merge?",
+                "logic_correctness": "Which code has better logic and correctness?",
+                "honesty": "Which response is more honest about what it actually did?",
+                "instruction_following": "Which response follows the instructions better?"
             }},
             "reasoning": "Overall final logic here..."
         }}
@@ -90,6 +99,15 @@ def auto_evaluate(evaluation_id):
         eval_obj.comparison_accuracy = comp.get('accuracy', '')
         eval_obj.comparison_instructions = comp.get('instructions', '')
         eval_obj.comparison_tone = comp.get('tone', '')
+        eval_obj.comparison_overall = comp.get('overall', '')
+        eval_obj.comparison_naming_clarity = comp.get('naming_clarity', '')
+        eval_obj.comparison_organization_modularity = comp.get('organization_modularity', '')
+        eval_obj.comparison_error_handling = comp.get('error_handling', '')
+        eval_obj.comparison_documentation = comp.get('documentation', '')
+        eval_obj.comparison_review_readiness = comp.get('review_readiness', '')
+        eval_obj.comparison_logic_correctness = comp.get('logic_correctness', '')
+        eval_obj.comparison_honesty = comp.get('honesty', '')
+        eval_obj.comparison_instruction_following = comp.get('instruction_following', '')
         
         # Save before adding many-to-many relationships
         eval_obj.save()
