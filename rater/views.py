@@ -44,6 +44,13 @@ def evaluate(request):
                 'status': 'success',
                 'score': eval_obj.score,
                 'ai_logic': eval_obj.ai_logic,
+                'strength_a': eval_obj.strength_a,
+                'strength_b': eval_obj.strength_b,
+                'comparison': {
+                    'accuracy': eval_obj.comparison_accuracy,
+                    'instructions': eval_obj.comparison_instructions,
+                    'tone': eval_obj.comparison_tone,
+                },
                 'weaknesses_a': format_weaknesses(eval_obj.weaknesses_a),
                 'weaknesses_b': format_weaknesses(eval_obj.weaknesses_b),
             })

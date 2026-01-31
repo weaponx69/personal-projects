@@ -29,23 +29,33 @@ def auto_evaluate(evaluation_id):
         Response A: {eval_obj.response_a}
         Response B: {eval_obj.response_b}
         
-        Possible Weakness Categories: {categories}
+        CRITICAL: Use ONLY these Category Names for identification: {categories}
         
         INSTRUCTIONS:
-        1. Identify specific weaknesses for A and B.
-        2. Rate the comparison on a scale of -5 to 5.
+        1. Compare Response A and Response B.
+        2. Identify strengths for each response in one concise paragraph.
+        3. Identify weaknesses for A and B using the exact bracketed tags like [LAZY] or [HALLUC].
+        4. Provide a direct comparison for Accuracy, Instruction Following, and Tone/Format, explaining which model performed better in each.
+        5. Rate the comparison on a scale of -5 to 5.
            -5: Response A is perfect, B is terrible.
             0: They are exactly equal.
             5: Response B is perfect, A is terrible.
         
         OUTPUT FORMAT:
-        You must return ONLY a JSON object. Do not include any other text.
+        You must return ONLY a JSON object. No other text.
         Format:
         {{
-            "score": 2,
-            "weaknesses_a": ["Hallucination"],
-            "weaknesses_b": ["Verbosity"],
-            "reasoning": "Explain your choice here."
+            "score": 0,
+            "strength_a": "Concise paragraph...",
+            "strength_b": "Concise paragraph...",
+            "weaknesses_a": ["[TAG1]", "[TAG2]"],
+            "weaknesses_b": ["[TAG3]"],
+            "comparison": {{
+                "accuracy": "Compare A and B behavior...",
+                "instructions": "Compare A and B behavior...",
+                "tone": "Compare A and B behavior..."
+            }},
+            "reasoning": "Overall final logic here..."
         }}
         """
 
@@ -72,6 +82,15 @@ def auto_evaluate(evaluation_id):
         eval_obj.score = data.get('score', 0)
         eval_obj.ai_logic = data.get('reasoning', '')
         
+        # New sections
+        eval_obj.strength_a = data.get('strength_a', '')
+        eval_obj.strength_b = data.get('strength_b', '')
+        
+        comp = data.get('comparison', {})
+        eval_obj.comparison_accuracy = comp.get('accuracy', '')
+        eval_obj.comparison_instructions = comp.get('instructions', '')
+        eval_obj.comparison_tone = comp.get('tone', '')
+        
         # Save before adding many-to-many relationships
         eval_obj.save()
 
@@ -81,12 +100,28 @@ def auto_evaluate(evaluation_id):
 
         # Map strings back to database objects
         for w_name in data.get('weaknesses_a', []):
-            cat, _ = WeaknessCategory.objects.get_or_create(name=w_name)
-            eval_obj.weaknesses_a.add(cat)
+            # Try exact match first
+            cat = WeaknessCategory.objects.filter(name=w_name).first()
+            if not cat:
+                # Try matching just the bracketed part, e.g., "[LAZY]"
+                tag_match = re.search(r'\[[A-Z]+\]', w_name)
+                if tag_match:
+                    cat = WeaknessCategory.objects.filter(name__startswith=tag_match.group()).first()
+            
+            if cat:
+                eval_obj.weaknesses_a.add(cat)
             
         for w_name in data.get('weaknesses_b', []):
-            cat, _ = WeaknessCategory.objects.get_or_create(name=w_name)
-            eval_obj.weaknesses_b.add(cat)
+            # Try exact match first
+            cat = WeaknessCategory.objects.filter(name=w_name).first()
+            if not cat:
+                # Try matching just the bracketed part, e.g., "[LAZY]"
+                tag_match = re.search(r'\[[A-Z]+\]', w_name)
+                if tag_match:
+                    cat = WeaknessCategory.objects.filter(name__startswith=tag_match.group()).first()
+            
+            if cat:
+                eval_obj.weaknesses_b.add(cat)
 
         return True
 

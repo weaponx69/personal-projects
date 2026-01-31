@@ -17,6 +17,7 @@
             --border: #334155;
             --success: #22c55e;
             --error: #ef4444;
+            --step-bg: #1e293b;
         }
 
         * {
@@ -40,7 +41,7 @@
 
         header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
         }
 
         h1 {
@@ -64,6 +65,47 @@
             margin-bottom: 2rem;
         }
 
+        /* Step Navigation Styles */
+        .step-container {
+            display: none;
+        }
+
+        .step-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .step-dot {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-sub);
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .step-dot.active {
+            background: var(--accent);
+            color: var(--bg);
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        .step-dot.completed {
+            background: var(--success);
+            color: white;
+        }
+
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -73,6 +115,7 @@
             margin-bottom: 0.5rem;
             color: var(--accent);
             font-weight: 600;
+            font-size: 1.1rem;
         }
 
         textarea {
@@ -85,6 +128,7 @@
             font-family: inherit;
             resize: vertical;
             transition: border-color 0.2s;
+            font-size: 1rem;
         }
 
         textarea:focus {
@@ -92,61 +136,124 @@
             border-color: var(--accent);
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
         }
 
         button {
-            width: 100%;
-            background: var(--accent);
-            color: var(--bg);
-            border: none;
+            flex: 1;
             padding: 1rem;
             font-weight: 600;
             border-radius: 0.5rem;
             cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
+            transition: all 0.2s;
             font-size: 1rem;
+            border: none;
         }
 
-        button:hover {
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn-primary:hover {
             background: #7dd3fc;
             transform: translateY(-2px);
         }
 
+        .btn-secondary {
+            background: var(--border);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Results Display */
         .result-section {
             display: none;
             margin-top: 2rem;
-            border-top: 1px solid var(--border);
-            padding-top: 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
         }
 
         .score-badge {
             display: inline-block;
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1.5rem;
             border-radius: 2rem;
             font-weight: bold;
-            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .strength-card {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .strength-card h4 {
+            color: var(--success);
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+
+        .comparison-row {
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 0;
+        }
+
+        .comparison-label {
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .comparison-text {
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .loading-spinner {
             display: none;
             text-align: center;
-            margin: 1rem 0;
+            margin: 2rem 0;
+            font-size: 1.2rem;
             color: var(--accent);
-        }
-
-        .weakness-tag {
-            display: inline-block;
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--error);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            margin-right: 5px;
-            border: 1px solid rgba(239, 68, 68, 0.3);
         }
     </style>
 </head>
@@ -155,73 +262,174 @@
     <div class="container">
         <header>
             <h1>Prompt Judge</h1>
-            <p class="subtitle">AI-Powered Response Comparison & Quality Audit</p>
+            <p class="subtitle">Enter each step one by one for analysis</p>
         </header>
 
         <section class="glass-card">
+            <!-- Step Indicators -->
+            <div class="step-indicator">
+                <div class="step-dot active" id="dot1">1</div>
+                <div class="step-dot" id="dot2">2</div>
+                <div class="step-dot" id="dot3">3</div>
+            </div>
+
             <form id="judgeForm">
                 {% csrf_token %}
-                <div class="form-group">
-                    <label for="prompt">The Prompt</label>
-                    <textarea id="prompt" name="prompt" rows="3"
-                        placeholder="Paste the original prompt here..."></textarea>
-                </div>
 
-                <div class="grid">
+                <!-- Step 1: Prompt -->
+                <div class="step-container active" id="step1">
                     <div class="form-group">
-                        <label for="response_a">Response A</label>
-                        <textarea id="response_a" name="response_a" rows="8"
-                            placeholder="Paste first AI response..."></textarea>
+                        <label for="prompt">Step 1: The Original Prompt</label>
+                        <textarea id="prompt" name="prompt" rows="10"
+                            placeholder="Paste the prompt that was given to the AI models..."></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="response_b">Response B</label>
-                        <textarea id="response_b" name="response_b" rows="8"
-                            placeholder="Paste second AI response..."></textarea>
+                    <div class="button-group">
+                        <button type="button" class="btn-primary" onclick="goToStep(2)">Next: Response A &rarr;</button>
                     </div>
                 </div>
 
-                <button type="submit" id="submitBtn">Analyze Comparison</button>
+                <!-- Step 2: Response A -->
+                <div class="step-container" id="step2">
+                    <div class="form-group">
+                        <label for="response_a">Step 2: Response A</label>
+                        <textarea id="response_a" name="response_a" rows="20"
+                            placeholder="Paste the first model's long response here..."></textarea>
+                    </div>
+                    <div class="button-group">
+                        <button type="button" class="btn-secondary" onclick="goToStep(1)">&larr; Back to Prompt</button>
+                        <button type="button" class="btn-primary" onclick="goToStep(3)">Next: Response B &rarr;</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Response B -->
+                <div class="step-container" id="step3">
+                    <div class="form-group">
+                        <label for="response_b">Step 3: Response B</label>
+                        <textarea id="response_b" name="response_b" rows="20"
+                            placeholder="Paste the second model's long response here..."></textarea>
+                    </div>
+                    <div class="button-group">
+                        <button type="button" class="btn-secondary" onclick="goToStep(2)">&larr; Back to Response
+                            A</button>
+                        <button type="submit" class="btn-primary" id="submitBtn">Finalize & Analyze Comparison</button>
+                    </div>
+                </div>
             </form>
 
-            <div id="loader" class="loading-spinner">Analyzing with Perplexity Sonar... ⌛</div>
+            <div id="loader" class="loading-spinner">
+                <div style="margin-bottom: 1rem;">Analyzing complex responses with Perplexity Sonar...</div>
+                <div style="font-size: 0.9rem; color: var(--text-sub);">This may take 30-60 seconds depending on size.
+                </div>
+            </div>
         </section>
 
-        <!-- Result Card (Hidden until analyzed) -->
+        <!-- Final Report Section -->
         <section id="results" class="glass-card result-section">
-            <h2 id="verdict" style="margin-bottom: 1rem;">Analysis Verdict</h2>
-            <div id="scoreBadge" class="score-badge">Score: 0</div>
+            <h2
+                style="margin-bottom: 1.5rem; text-align: center; border-bottom: 2px solid var(--border); padding-bottom: 1rem;">
+                Audit Results</h2>
 
-            <div class="grid">
+            <div style="text-align: center;">
+                <div id="scoreBadge" class="score-badge">Final Score: 0</div>
+            </div>
+
+            <!-- Strengths Grid -->
+            <div class="grid" style="margin-bottom: 3rem;">
                 <div>
-                    <h3 style="color: var(--text-sub); margin-bottom: 0.5rem;">A's Weaknesses</h3>
+                    <div class="strength-card">
+                        <h4>Strengths of Response A</h4>
+                        <p id="strengthA"></p>
+                    </div>
+                    <h3
+                        style="color: var(--text-sub); margin-bottom: 1rem; font-size: 1rem; text-transform: uppercase;">
+                        A's Weaknesses</h3>
                     <div id="weaknessesA"></div>
                 </div>
                 <div>
-                    <h3 style="color: var(--text-sub); margin-bottom: 0.5rem;">B's Weaknesses</h3>
+                    <div class="strength-card"
+                        style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.2);">
+                        <h4 style="color: var(--accent);">Strengths of Response B</h4>
+                        <p id="strengthB"></p>
+                    </div>
+                    <h3
+                        style="color: var(--text-sub); margin-bottom: 1rem; font-size: 1rem; text-transform: uppercase;">
+                        B's Weaknesses</h3>
                     <div id="weaknessesB"></div>
                 </div>
             </div>
 
-            <div style="margin-top: 1.5rem;">
-                <label>AI Reasoning</label>
-                <div id="aiLogic"
-                    style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.5rem; font-size: 0.95rem;">
+            <!-- Deep Comparison Categories -->
+            <div style="margin-top: 4rem; padding-top: 2rem; border-top: 2px solid var(--border);">
+                <h2 style="text-align: center; margin-bottom: 2rem; color: var(--accent);">Detailed Model Comparison
+                </h2>
+
+                <div class="comparison-row">
+                    <span class="comparison-label">Accuracy & Hallucination Check</span>
+                    <p id="compAccuracy" class="comparison-text"></p>
                 </div>
+
+                <div class="comparison-row">
+                    <span class="comparison-label">Constraint & Instruction Adherence</span>
+                    <p id="compInstructions" class="comparison-text"></p>
+                </div>
+
+                <div class="comparison-row">
+                    <span class="comparison-label">Tone, Formatting & Structure</span>
+                    <p id="compTone" class="comparison-text"></p>
+                </div>
+
+                <div class="comparison-row" style="border-bottom: none;">
+                    <span class="comparison-label">Final Executive Summary</span>
+                    <div id="aiLogic"
+                        style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 0.5rem; font-size: 1rem; line-height: 1.7; color: #cbd5e1;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 3rem; text-align: center;">
+                <button type="button" class="btn-secondary" style="max-width: 200px;" onclick="location.reload()">Start
+                    New Judge Session</button>
             </div>
         </section>
     </div>
 
     <script>
+        function goToStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.step-dot').forEach(el => el.classList.remove('active'));
+
+            // Show target step
+            document.getElementById('step' + step).classList.add('active');
+            document.getElementById('dot' + step).classList.add('active');
+
+            // Mark previous steps as completed
+            for (let i = 1; i < step; i++) {
+                document.getElementById('dot' + i).classList.add('completed');
+                document.getElementById('dot' + i).innerText = '✓';
+            }
+            // Reset further steps if user goes back
+            for (let i = step; i <= 3; i++) {
+                document.getElementById('dot' + i).classList.remove('completed');
+                document.getElementById('dot' + i).innerText = i;
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         document.getElementById('judgeForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = e.target;
             const btn = document.getElementById('submitBtn');
             const loader = document.getElementById('loader');
             const results = document.getElementById('results');
+            const indicators = document.querySelector('.step-indicator');
 
             btn.disabled = true;
             loader.style.display = 'block';
             results.style.display = 'none';
+            document.getElementById('step3').classList.remove('active');
+            indicators.style.display = 'none';
 
             const formData = new FormData(form);
 
@@ -237,22 +445,34 @@
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    // Populate results
-                    document.getElementById('scoreBadge').innerText = `Score: ${data.score}`;
-                    document.getElementById('scoreBadge').style.background = data.score > 0 ? 'var(--success)' : (data.score < 0 ? 'var(--error)' : 'var(--text-sub)');
+                    // Score
+                    document.getElementById('scoreBadge').innerText = `Final Comparison Score: ${data.score}`;
+                    document.getElementById('scoreBadge').style.background = data.score > 0 ? 'var(--success)' : (data.score < 0 ? 'var(--error)' : 'var(--border)');
 
+                    // Strengths
+                    document.getElementById('strengthA').innerText = data.strength_a || 'No significant strengths identified.';
+                    document.getElementById('strengthB').innerText = data.strength_b || 'No significant strengths identified.';
+
+                    // Comparison Summaries
+                    document.getElementById('compAccuracy').innerText = data.comparison.accuracy || 'N/A';
+                    document.getElementById('compInstructions').innerText = data.comparison.instructions || 'N/A';
+                    document.getElementById('compTone').innerText = data.comparison.tone || 'N/A';
+
+                    // Final Logic
                     document.getElementById('aiLogic').innerText = data.ai_logic;
 
+                    // Weaknesses
                     const formatDetails = (weaknesses) => {
-                        if (weaknesses.length === 0) return '<p style="color: var(--text-sub); font-size: 0.9rem;">No weaknesses identified.</p>';
+                        if (weaknesses.length === 0) return '<p style="color: var(--text-sub); font-size: 0.9rem;">No major weaknesses found.</p>';
                         return weaknesses.map(w => `
-                            <div style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 0.5rem; border-left: 4px solid var(--error);">
-                                <h4 style="color: var(--error); margin-bottom: 0.5rem;">${w.name}</h4>
-                                <p style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">Reasoning:</p>
-                                <pre style="white-space: pre-wrap; font-family: inherit; font-size: 0.85rem; background: none; color: var(--text-main); margin-bottom: 1rem;">${w.description || 'N/A'}</pre>
-                                
-                                <p style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">Example for Copy-Paste:</p>
-                                <textarea readonly rows="4" style="font-size: 0.85rem; height: auto;" onclick="this.select()">${w.examples || 'N/A'}</textarea>
+                            <div style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 0.75rem; border-left: 4px solid var(--error);">
+                                <h4 style="color: var(--error); margin-bottom: 0.75rem;">${w.name}</h4>
+                                <div style="margin-bottom: 1rem;">
+                                    <p style="color: var(--accent); font-weight: 600; font-size: 0.8rem; text-transform: uppercase;">Reasoning</p>
+                                    <p style="font-size: 0.9rem;">${w.description}</p>
+                                </div>
+                                <p style="color: var(--accent); font-weight: 600; font-size: 0.8rem; text-transform: uppercase;">Examples (Copy-Paste)</p>
+                                <textarea readonly rows="5" style="width: 100%; font-size: 0.85rem; background: #0a101f;" onclick="this.select()">${w.examples}</textarea>
                             </div>
                         `).join('');
                     };
@@ -264,10 +484,14 @@
                     results.scrollIntoView({ behavior: 'smooth' });
                 } else {
                     alert('Error: ' + data.message);
+                    goToStep(3);
+                    indicators.style.display = 'flex';
                 }
             } catch (err) {
-                alert('Something went wrong. Please try again.');
+                alert('An error occurred during audit. Please ensure your API key is correctly set in .env.');
                 console.error(err);
+                goToStep(3);
+                indicators.style.display = 'flex';
             } finally {
                 btn.disabled = false;
                 loader.style.display = 'none';

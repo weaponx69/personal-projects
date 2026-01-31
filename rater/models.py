@@ -25,3 +25,12 @@ class Evaluation(models.Model):
     weaknesses_b = models.ManyToManyField(WeaknessCategory, related_name='b_flaws', blank=True)
     
     ai_logic = models.TextField(blank=True) # To store the AI's explanation
+    
+    # Strengths
+    strength_a = models.TextField(blank=True)
+    strength_b = models.TextField(blank=True)
+    
+    # Comparison Summaries
+    comparison_accuracy = models.TextField(blank=True)
+    comparison_instructions = models.TextField(blank=True)
+    comparison_tone = models.TextField(blank=True)
