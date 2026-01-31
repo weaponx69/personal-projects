@@ -140,3 +140,81 @@ def auto_evaluate(evaluation_id):
         except:
             pass
         return False
+def evaluate_prompt_quality(prompt_text):
+    try:
+        system_prompt = "You are an expert prompt engineer. Evaluate the user's prompt for clarity, constraints, and effectiveness on a scale of 1-5."
+        user_prompt = f"""
+        Evaluate this prompt: "{prompt_text}"
+        
+        Provide a score (1-5) and a concise paragraph of feedback.
+        1: Very poor, ambiguous, no constraints.
+        5: Excellent, clear, specific constraints, well-structured.
+        
+        Return ONLY JSON:
+        {{
+            "score": 4,
+            "feedback": "Your feedback here..."
+        }}
+        """
+        
+        response = client.chat.completions.create(
+            model="sonar-pro",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        
+        content = response.choices[0].message.content
+        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+        if json_match:
+            data = json.loads(json_match.group())
+        else:
+            data = json.loads(content)
+            
+        return data  # {'score': x, 'feedback': '...'}
+    except Exception as e:
+        print(f"Error evaluating prompt: {e}")
+        return {'score': 0, 'feedback': f"Error: {str(e)}"}
+
+def scan_response_weaknesses(prompt_text, response_text):
+    try:
+        categories = list(WeaknessCategory.objects.values_list('name', flat=True))
+        system_prompt = "You are an AI quality auditor. Scan a single AI response against specific weakness criteria."
+        user_prompt = f"""
+        Original Prompt: "{prompt_text}"
+        AI Response: "{response_text}"
+        
+        Criteria to check: {categories}
+        
+        INSTRUCTIONS:
+        1. Identify which weaknesses from the list above are present in this specific response.
+        2. For each identified weakness, provide a 1-sentence explanation of where it occurred.
+        
+        Return ONLY JSON:
+        {{
+            "found_weaknesses": [
+                {{"name": "[TAG]", "reason": "Specific reason..."}}
+            ]
+        }}
+        """
+        
+        response = client.chat.completions.create(
+            model="sonar-pro",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        )
+        
+        content = response.choices[0].message.content
+        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+        if json_match:
+            data = json.loads(json_match.group())
+        else:
+            data = json.loads(content)
+            
+        return data.get('found_weaknesses', [])
+    except Exception as e:
+        print(f"Error scanning response: {e}")
+        return []

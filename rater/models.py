@@ -3,6 +3,8 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 
 class Prompt(models.Model):
     text = models.TextField()
+    quality_score = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)])
+    quality_feedback = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class WeaknessCategory(models.Model):

@@ -255,6 +255,72 @@
             font-size: 1.2rem;
             color: var(--accent);
         }
+
+        /* Prompt Evaluation Styling */
+        .prompt-eval-box {
+            display: none;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        /* Criteria Reference Styling */
+        .criteria-reference {
+            margin-top: 2rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+
+        .criteria-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .criteria-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .criteria-grid::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        .criteria-item {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .criteria-item:hover {
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .criteria-item.found {
+            border-color: var(--error);
+            background: rgba(239, 68, 68, 0.1);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+        }
+
+        .scan-reason {
+            font-size: 0.75rem;
+            color: #fca5a5;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(239, 68, 68, 0.2);
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -283,8 +349,23 @@
                         <textarea id="prompt" name="prompt" rows="10"
                             placeholder="Paste the prompt that was given to the AI models..."></textarea>
                     </div>
+
+                    <!-- Prompt Evaluation Results -->
+                    <div id="promptEvalBox" class="prompt-eval-box">
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                            <h3 style="color: var(--accent);">Prompt Eng Quality</h3>
+                            <div id="promptScore" class="score-badge" style="margin-bottom: 0; font-size: 1rem;">Score:
+                                -</div>
+                        </div>
+                        <p id="promptFeedback" style="font-size: 0.95rem; line-height: 1.5; color: #cbd5e1;"></p>
+                    </div>
+
                     <div class="button-group">
-                        <button type="button" class="btn-primary" onclick="goToStep(2)">Next: Response A &rarr;</button>
+                        <button type="button" id="evaluatePromptBtn" class="btn-primary"
+                            onclick="handlePromptEval()">Evaluate Prompt Quality</button>
+                        <button type="button" id="proceedBtn" class="btn-primary" style="display: none;"
+                            onclick="goToStep(2)">Proceed to Response A &rarr;</button>
                     </div>
                 </div>
 
@@ -292,9 +373,37 @@
                 <div class="step-container" id="step2">
                     <div class="form-group">
                         <label for="response_a">Step 2: Response A</label>
-                        <textarea id="response_a" name="response_a" rows="20"
+                        <textarea id="response_a" name="response_a" rows="15"
                             placeholder="Paste the first model's long response here..."></textarea>
                     </div>
+
+                    <!-- Criteria Reference (Step 2) -->
+                    <div class="criteria-reference">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                            <h4 style="color: var(--accent); margin: 0;">Weakness Criteria Reference</h4>
+                            <button type="button" id="scanBtnA" class="btn-primary"
+                                style="max-width: 250px; padding: 0.5rem 1rem; font-size: 0.85rem;"
+                                onclick="handleScan('a')">Scan Response A for Weaknesses</button>
+                        </div>
+                        <div class="criteria-grid" id="gridA">
+                            {% for cat in weakness_categories %}
+                            <div class="criteria-item" data-name="{{ cat.name }}">
+                                <p style="font-weight: 600; color: var(--error); font-size: 0.85rem;">{{ cat.name }}</p>
+                                <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.5rem;">{{
+                                    cat.description }}</p>
+                                <details>
+                                    <summary style="font-size: 0.75rem; color: var(--accent); cursor: pointer;">View
+                                        Examples & Reasoning</summary>
+                                    <pre
+                                        style="font-size: 0.75rem; white-space: pre-wrap; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 0.25rem; margin-top: 0.5rem; max-height: 150px; overflow-y: auto;">{{ cat.examples }}</pre>
+                                </details>
+                                <div class="scan-result-placeholder"></div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
                     <div class="button-group">
                         <button type="button" class="btn-secondary" onclick="goToStep(1)">&larr; Back to Prompt</button>
                         <button type="button" class="btn-primary" onclick="goToStep(3)">Next: Response B &rarr;</button>
@@ -305,8 +414,35 @@
                 <div class="step-container" id="step3">
                     <div class="form-group">
                         <label for="response_b">Step 3: Response B</label>
-                        <textarea id="response_b" name="response_b" rows="20"
+                        <textarea id="response_b" name="response_b" rows="15"
                             placeholder="Paste the second model's long response here..."></textarea>
+                    </div>
+
+                    <!-- Criteria Reference (Step 3) -->
+                    <div class="criteria-reference">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                            <h4 style="color: var(--accent); margin: 0;">Weakness Criteria Reference</h4>
+                            <button type="button" id="scanBtnB" class="btn-primary"
+                                style="max-width: 250px; padding: 0.5rem 1rem; font-size: 0.85rem;"
+                                onclick="handleScan('b')">Scan Response B for Weaknesses</button>
+                        </div>
+                        <div class="criteria-grid" id="gridB">
+                            {% for cat in weakness_categories %}
+                            <div class="criteria-item" data-name="{{ cat.name }}">
+                                <p style="font-weight: 600; color: var(--error); font-size: 0.85rem;">{{ cat.name }}</p>
+                                <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.5rem;">{{
+                                    cat.description }}</p>
+                                <details>
+                                    <summary style="font-size: 0.75rem; color: var(--accent); cursor: pointer;">View
+                                        Examples & Reasoning</summary>
+                                    <pre
+                                        style="font-size: 0.75rem; white-space: pre-wrap; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 0.25rem; margin-top: 0.5rem; max-height: 150px; overflow-y: auto;">{{ cat.examples }}</pre>
+                                </details>
+                                <div class="scan-result-placeholder"></div>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     <div class="button-group">
                         <button type="button" class="btn-secondary" onclick="goToStep(2)">&larr; Back to Response
@@ -317,7 +453,8 @@
             </form>
 
             <div id="loader" class="loading-spinner">
-                <div style="margin-bottom: 1rem;">Analyzing complex responses with Perplexity Sonar...</div>
+                <div id="loaderText" style="margin-bottom: 1rem;">Analyzing complex responses with Perplexity Sonar...
+                </div>
                 <div style="font-size: 0.9rem; color: var(--text-sub);">This may take 30-60 seconds depending on size.
                 </div>
             </div>
@@ -417,15 +554,137 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        async function handlePromptEval() {
+            const promptText = document.getElementById('prompt').value;
+            if (!promptText) {
+                alert("Please paste a prompt first.");
+                return;
+            }
+
+            const btn = document.getElementById('evaluatePromptBtn');
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
+
+            btn.disabled = true;
+            loaderText.innerText = "Evaluating prompt engineering quality...";
+            loader.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('prompt', promptText);
+
+            try {
+                const response = await fetch('/evaluate-prompt/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    document.getElementById('promptScore').innerText = `Quality Score: ${data.score} / 5`;
+                    document.getElementById('promptFeedback').innerText = data.feedback;
+                    document.getElementById('promptEvalBox').style.display = 'block';
+
+                    // Show proceed button
+                    document.getElementById('evaluatePromptBtn').style.display = 'none';
+                    document.getElementById('proceedBtn').style.display = 'block';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Connection error.');
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+            }
+        }
+        async function handleScan(responseType) {
+            const promptText = document.getElementById('prompt').value;
+            const responseText = document.getElementById('response_' + responseType).value;
+
+            if (!responseText) {
+                alert("Please paste the response first.");
+                return;
+            }
+
+            const btn = document.getElementById('scanBtn' + responseType.toUpperCase());
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
+            const gridId = 'grid' + responseType.toUpperCase();
+            const grid = document.getElementById(gridId);
+
+            btn.disabled = true;
+            loaderText.innerText = "Scanning Response " + responseType.toUpperCase() + " for criteria...";
+            loader.style.display = 'block';
+
+            // Clear previous results in this grid
+            grid.querySelectorAll('.criteria-item').forEach(item => {
+                item.classList.remove('found');
+                item.querySelector('.scan-result-placeholder').innerHTML = '';
+            });
+
+            const formData = new FormData();
+            formData.append('prompt', promptText);
+            formData.append('response_text', responseText);
+
+            try {
+                const response = await fetch('/scan-weaknesses/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    data.found_weaknesses.forEach(w => {
+                        // Find the item in the grid by data-name
+                        const item = grid.querySelector(`.criteria-item[data-name="${w.name}"]`);
+                        if (item) {
+                            item.classList.add('found');
+                            item.querySelector('.scan-result-placeholder').innerHTML = `
+                                <div class="scan-reason">
+                                    <strong>Flagged:</strong> ${w.reason}
+                                </div>
+                            `;
+                        }
+                    });
+
+                    if (data.found_weaknesses.length === 0) {
+                        alert("Scan complete: No weaknesses from the current criteria were found in this response.");
+                    } else {
+                        // Scroll slightly to the grid if not already in view
+                        grid.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Connection error.');
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+            }
+        }
+
         document.getElementById('judgeForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = e.target;
             const btn = document.getElementById('submitBtn');
             const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
             const results = document.getElementById('results');
             const indicators = document.querySelector('.step-indicator');
 
             btn.disabled = true;
+            loaderText.innerText = "Analyzing complex responses with Perplexity Sonar...";
             loader.style.display = 'block';
             results.style.display = 'none';
             document.getElementById('step3').classList.remove('active');
