@@ -474,8 +474,16 @@
                 style="margin-bottom: 1.5rem; text-align: center; border-bottom: 2px solid var(--border); padding-bottom: 1rem;">
                 Audit Results</h2>
 
-            <div style="text-align: center;">
-                <div id="scoreBadge" class="score-badge">Final Score: 0</div>
+            <div class="score-scale-container" style="margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem; color: var(--text-sub);">
+                    <span>&larr; A is Better</span>
+                    <span>B is Better &rarr;</span>
+                </div>
+                <div class="score-scale" style="position: relative; width: 100%; height: 12px; background: var(--border); border-radius: 6px; margin-top: 0.5rem;">
+                    <div id="scoreMarker" style="position: absolute; top: -4px; width: 20px; height: 20px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); transform: translateX(-50%);"></div>
+                    <div style="position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background: var(--bg);"></div>
+                </div>
+                <div id="scoreValue" style="text-align: center; margin-top: 1rem; font-size: 1.2rem; font-weight: 600; color: var(--accent);">Score: 0</div>
             </div>
 
             <!-- Strengths Grid -->
@@ -691,6 +699,13 @@
             formData.append('response_text', responseText);
 
             try {
+                const response = await fetch('/scan-weaknesses/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
                 const data = await response.json();
                 console.log(data);
 
@@ -705,7 +720,7 @@
 
                     data.found_weaknesses.forEach(w => {
                         // Find the item in the grid by data-name
-                        const item = grid.querySelector(`.criteria-item[data-name="${w.name}"]`);
+                        const item = grid.querySelector(`.criteria-item[data-name^="${w.name}"]`);
                         if (item) {
                             item.classList.add('found');
                             item.querySelector('.scan-result-placeholder').innerHTML = `
@@ -753,20 +768,31 @@
             const formData = new FormData(form);
 
             try {
-                const response = await fetch('/evaluate/', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    }
-                });
-
                 const data = await response.json();
+                console.log(data);
 
                 if (data.status === 'success') {
-                    // Score
-                    document.getElementById('scoreBadge').innerText = `Final Comparison Score: ${data.score}`;
-                    document.getElementById('scoreBadge').style.background = data.score > 0 ? 'var(--success)' : (data.score < 0 ? 'var(--error)' : 'var(--border)');
+                    // Score Scale
+                    const score = data.score;
+                    const scoreMarker = document.getElementById('scoreMarker');
+                    const scoreValue = document.getElementById('scoreValue');
+                    
+                    // Calculate position from -5 to 5 on a 0-100% scale
+                    const percentage = ((score + 5) / 10) * 100;
+                    scoreMarker.style.left = `${percentage}%`;
+                    
+                    // Update color and text
+                    scoreValue.innerText = `Comparison Score: ${score}`;
+                    if (score < 0) {
+                        scoreMarker.style.background = 'var(--error)';
+                        scoreMarker.style.boxShadow = '0 0 10px var(--error)';
+                    } else if (score > 0) {
+                        scoreMarker.style.background = 'var(--success)';
+                        scoreMarker.style.boxShadow = '0 0 10px var(--success)';
+                    } else {
+                        scoreMarker.style.background = 'var(--accent)';
+                        scoreMarker.style.boxShadow = '0 0 10px var(--accent)';
+                    }
 
                     // Strengths
                     document.getElementById('strengthA').innerText = data.strength_a || 'No significant strengths identified.';
