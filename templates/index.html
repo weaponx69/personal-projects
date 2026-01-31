@@ -1,0 +1,210 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Judge | AI Auditor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --border: #334155;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: var(--bg); 
+            color: var(--text-main); 
+            font-family: 'Outfit', sans-serif; 
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        header { text-align: center; margin-bottom: 3rem; }
+        h1 { font-size: 2.5rem; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p.subtitle { color: var(--text-sub); }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            margin-bottom: 2rem;
+        }
+
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.5rem; color: var(--accent); font-weight: 600; }
+        textarea {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: white;
+            padding: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        textarea:focus { outline: none; border-color: var(--accent); }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+        button {
+            width: 100%;
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 1rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            font-size: 1rem;
+        }
+        button:hover { background: #7dd3fc; transform: translateY(-2px); }
+
+        .result-section { display: none; margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 2rem; }
+        .score-badge { 
+            display: inline-block; 
+            padding: 0.5rem 1rem; 
+            border-radius: 2rem; 
+            font-weight: bold; 
+            margin-bottom: 1rem;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+            color: var(--accent);
+        }
+
+        .weakness-tag {
+            display: inline-block;
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Prompt Judge</h1>
+            <p class="subtitle">AI-Powered Response Comparison & Quality Audit</p>
+        </header>
+
+        <section class="glass-card">
+            <form id="judgeForm">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="prompt">The Prompt</label>
+                    <textarea id="prompt" name="prompt" rows="3" placeholder="Paste the original prompt here..."></textarea>
+                </div>
+
+                <div class="grid">
+                    <div class="form-group">
+                        <label for="response_a">Response A</label>
+                        <textarea id="response_a" name="response_a" rows="8" placeholder="Paste first AI response..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="response_b">Response B</label>
+                        <textarea id="response_b" name="response_b" rows="8" placeholder="Paste second AI response..."></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn">Analyze Comparison</button>
+            </form>
+
+            <div id="loader" class="loading-spinner">Analyzing with Perplexity Sonar... ⌛</div>
+        </section>
+
+        <!-- Result Card (Hidden until analyzed) -->
+        <section id="results" class="glass-card result-section">
+            <h2 id="verdict" style="margin-bottom: 1rem;">Analysis Verdict</h2>
+            <div id="scoreBadge" class="score-badge">Score: 0</div>
+            
+            <div class="grid">
+                <div>
+                    <h3 style="color: var(--text-sub); margin-bottom: 0.5rem;">A's Weaknesses</h3>
+                    <div id="weaknessesA"></div>
+                </div>
+                <div>
+                    <h3 style="color: var(--text-sub); margin-bottom: 0.5rem;">B's Weaknesses</h3>
+                    <div id="weaknessesB"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <label>AI Reasoning</label>
+                <div id="aiLogic" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.5rem; font-size: 0.95rem;"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.getElementById('judgeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const btn = document.getElementById('submitBtn');
+            const loader = document.getElementById('loader');
+            const results = document.getElementById('results');
+
+            btn.disabled = true;
+            loader.style.display = 'block';
+            results.style.display = 'none';
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/evaluate/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // Populate results
+                    document.getElementById('scoreBadge').innerText = `Score: ${data.score}`;
+                    document.getElementById('scoreBadge').style.background = data.score > 0 ? 'var(--success)' : (data.score < 0 ? 'var(--error)' : 'var(--text-sub)');
+                    
+                    document.getElementById('aiLogic').innerText = data.ai_logic;
+                    
+                    document.getElementById('weaknessesA').innerHTML = data.weaknesses_a.map(w => `<span class="weakness-tag">${w}</span>`).join('');
+                    document.getElementById('weaknessesB').innerHTML = data.weaknesses_b.map(w => `<span class="weakness-tag">${w}</span>`).join('');
+                    
+                    results.style.display = 'block';
+                    results.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Something went wrong. Please try again.');
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
