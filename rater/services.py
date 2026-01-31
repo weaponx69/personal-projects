@@ -7,7 +7,8 @@ from .models import Evaluation, WeaknessCategory
 # Initialize the Perplexity client using your settings
 client = OpenAI(
     api_key=settings.PERPLEXITY_API_KEY,
-    base_url="https://api.perplexity.ai"
+    base_url="https://api.perplexity.ai",
+    timeout=120.0
 )
 
 def auto_evaluate(evaluation_id):
@@ -146,8 +147,17 @@ def auto_evaluate(evaluation_id):
     except Evaluation.DoesNotExist:
         print(f"Evaluation with ID {evaluation_id} not found.")
         return False
+    except OpenAI.APIConnectionError as e:
+        print(f"Connection error during auto_evaluate: {e.__cause__}")
+        try:
+            eval_obj = Evaluation.objects.get(id=evaluation_id)
+            eval_obj.ai_logic = f"Error: A connection error occurred. Please check your network and API key. Details: {str(e)}"
+            eval_obj.save()
+        except:
+            pass
+        return False
     except Exception as e:
-        print(f"Error in auto_evaluate: {e}")
+        print(f"An unexpected error occurred in auto_evaluate: {type(e).__name__} - {e}")
         # If we have the eval_obj, we can save the error message
         try:
             eval_obj = Evaluation.objects.get(id=evaluation_id)
@@ -191,26 +201,31 @@ def evaluate_prompt_quality(prompt_text):
             data = json.loads(content)
             
         return data  # {'score': x, 'feedback': '...'}
+    except OpenAI.APIConnectionError as e:
+        print(f"Connection error during prompt evaluation: {e.__cause__}")
+        return {'score': 0, 'feedback': f"Error: A connection error occurred. Details: {str(e)}"}
     except Exception as e:
-        print(f"Error evaluating prompt: {e}")
+        print(f"Error evaluating prompt: {type(e).__name__} - {e}")
         return {'score': 0, 'feedback': f"Error: {str(e)}"}
 
 def scan_response_weaknesses(prompt_text, response_text):
     try:
         categories = list(WeaknessCategory.objects.values_list('name', flat=True))
-        system_prompt = "You are an AI quality auditor. Scan a single AI response against specific weakness criteria."
+        system_prompt = "You are an AI quality auditor. Scan a single AI response against specific weakness criteria and identify its strengths."
         user_prompt = f"""
         Original Prompt: "{prompt_text}"
         AI Response: "{response_text}"
         
-        Criteria to check: {categories}
+        CRITICAL: Use ONLY these Category Names for identification: {categories}
         
         INSTRUCTIONS:
         1. Identify which weaknesses from the list above are present in this specific response.
         2. For each identified weakness, provide a 1-sentence explanation of where it occurred.
+        3. Identify the main strength(s) of the response in one concise paragraph.
         
         Return ONLY JSON:
         {{
+            "strength": "Concise paragraph describing the strength(s)...",
             "found_weaknesses": [
                 {{"name": "[TAG]", "reason": "Specific reason..."}}
             ]
@@ -232,7 +247,10 @@ def scan_response_weaknesses(prompt_text, response_text):
         else:
             data = json.loads(content)
             
-        return data.get('found_weaknesses', [])
+        return data
+    except OpenAI.APIConnectionError as e:
+        print(f"Connection error during weakness scan: {e.__cause__}")
+        return {"strength": "Connection Error", "found_weaknesses": []}
     except Exception as e:
-        print(f"Error scanning response: {e}")
-        return []
+        print(f"Error scanning response: {type(e).__name__} - {e}")
+        return {"strength": f"Error: {str(e)}", "found_weaknesses": []}

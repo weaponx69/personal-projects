@@ -91,9 +91,10 @@ def scan_weaknesses(request):
         if not prompt_text or not response_text:
             return JsonResponse({'status': 'error', 'message': 'Missing text'}, status=400)
             
-        found = scan_response_weaknesses(prompt_text, response_text)
+        scan_results = scan_response_weaknesses(prompt_text, response_text)
         return JsonResponse({
             'status': 'success',
-            'found_weaknesses': found
+            'strength': scan_results.get('strength', ''),
+            'found_weaknesses': scan_results.get('found_weaknesses', [])
         })
     return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)

@@ -385,9 +385,13 @@
                             <button type="button" id="scanBtnA" class="btn-primary"
                                 style="max-width: 250px; padding: 0.5rem 1rem; font-size: 0.85rem;"
                                 onclick="handleScan('a')">Scan Response A for Weaknesses</button>
-                        </div>
-                        <div class="criteria-grid" id="gridA">
-                            {% for cat in weakness_categories %}
+                                            </div>
+                                            <!-- Strength Display (Step 2) -->
+                                            <div id="strengthDisplayA" class="strength-box" style="display: none; margin-bottom: 1.5rem; background: rgba(34, 197, 94, 0.1); border: 1px solid var(--success); border-radius: 0.5rem; padding: 1rem;">
+                                                <h4 style="color: var(--success); margin-bottom: 0.5rem;">Strengths Identified</h4>
+                                                <p id="strengthTextA" style="font-size: 0.95rem; color: var(--text-main);"></p>
+                                            </div>
+                                            <div class="criteria-grid" id="gridA">                            {% for cat in weakness_categories %}
                             <div class="criteria-item" data-name="{{ cat.name }}">
                                 <p style="font-weight: 600; color: var(--error); font-size: 0.85rem;">{{ cat.name }}</p>
                                 <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.5rem;">{{
@@ -426,9 +430,13 @@
                             <button type="button" id="scanBtnB" class="btn-primary"
                                 style="max-width: 250px; padding: 0.5rem 1rem; font-size: 0.85rem;"
                                 onclick="handleScan('b')">Scan Response B for Weaknesses</button>
-                        </div>
-                        <div class="criteria-grid" id="gridB">
-                            {% for cat in weakness_categories %}
+                                            </div>
+                                            <!-- Strength Display (Step 3) -->
+                                            <div id="strengthDisplayB" class="strength-box" style="display: none; margin-bottom: 1.5rem; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--accent); border-radius: 0.5rem; padding: 1rem;">
+                                                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">Strengths Identified</h4>
+                                                <p id="strengthTextB" style="font-size: 0.95rem; color: var(--text-main);"></p>
+                                            </div>
+                                            <div class="criteria-grid" id="gridB">                            {% for cat in weakness_categories %}
                             <div class="criteria-item" data-name="{{ cat.name }}">
                                 <p style="font-weight: 600; color: var(--error); font-size: 0.85rem;">{{ cat.name }}</p>
                                 <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.5rem;">{{
@@ -672,22 +680,29 @@
                 item.querySelector('.scan-result-placeholder').innerHTML = '';
             });
 
+            // Clear and hide strength display
+            const strengthDisplay = document.getElementById('strengthDisplay' + responseType.toUpperCase());
+            const strengthText = document.getElementById('strengthText' + responseType.toUpperCase());
+            strengthDisplay.style.display = 'none';
+            strengthText.innerText = '';
+
             const formData = new FormData();
             formData.append('prompt', promptText);
             formData.append('response_text', responseText);
 
             try {
-                const response = await fetch('/scan-weaknesses/', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    }
-                });
-
                 const data = await response.json();
+                console.log(data);
 
                 if (data.status === 'success') {
+                    // Display Strengths
+                    if (data.strength) {
+                        strengthText.innerText = data.strength;
+                        strengthDisplay.style.display = 'block';
+                    } else {
+                        strengthDisplay.style.display = 'none';
+                    }
+
                     data.found_weaknesses.forEach(w => {
                         // Find the item in the grid by data-name
                         const item = grid.querySelector(`.criteria-item[data-name="${w.name}"]`);
