@@ -7,6 +7,11 @@ class Prompt(models.Model):
 
 class WeaknessCategory(models.Model):
     name = models.CharField(max_length=100) # e.g., Hallucination, Verbosity
+    description = models.TextField(blank=True, help_text="Why is this a weakness?")
+    examples = models.TextField(blank=True, help_text="Plain text examples for copy-pasting.")
+    
+    def __str__(self):
+        return self.name
 
 class Evaluation(models.Model):
     prompt = models.OneToOneField(Prompt, on_delete=models.CASCADE)

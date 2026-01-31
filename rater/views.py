@@ -30,12 +30,22 @@ def evaluate(request):
         if success:
             # Refresh to get updated data
             eval_obj.refresh_from_db()
+            
+            def format_weaknesses(queryset):
+                return [
+                    {
+                        'name': w.name,
+                        'description': w.description,
+                        'examples': w.examples
+                    } for w in queryset.all()
+                ]
+
             return JsonResponse({
                 'status': 'success',
                 'score': eval_obj.score,
                 'ai_logic': eval_obj.ai_logic,
-                'weaknesses_a': list(eval_obj.weaknesses_a.values_list('name', flat=True)),
-                'weaknesses_b': list(eval_obj.weaknesses_b.values_list('name', flat=True)),
+                'weaknesses_a': format_weaknesses(eval_obj.weaknesses_a),
+                'weaknesses_b': format_weaknesses(eval_obj.weaknesses_b),
             })
         else:
             return JsonResponse({'status': 'error', 'message': 'AI Audit failed'}, status=500)
