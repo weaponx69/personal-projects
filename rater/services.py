@@ -94,38 +94,43 @@ def auto_evaluate_stream(evaluation_id, pre_scan_a=None, pre_scan_b=None):
         
         INSTRUCTIONS:
         1. Compare Response A and Response B.
-        2. Integrate the pre-identified findings into your analysis. If a finding was identified in a pre-scan, explain its impact in the relevant detailed comparison category (e.g., use 'LACK_OF_DOCS' to inform the 'documentation' comparison).
+        2. Integrate the pre-identified findings into your analysis.
         3. Identify strengths and ALL relevant weaknesses using exact tags {categories}.
-        4. Provide direct comparison details for each category, specifically highlighting why one response's weakness makes the other's approach superior or equal.
-        5. Rate the comparison from -4 (A is perfect) to 4 (B is perfect).
+        4. TIE-BREAKER RULE: A score of 0 is FORBIDDEN. If they seem equal, you MUST pick a winner based on subtle factors like readability, formatting, or tone.
+        5. For each category, provide a justification (text) and a score.
+           -4 to -1: A wins (4=max, 1=marginal)
+            1 to 4: B wins (1=marginal, 4=max)
         
         OUTPUT FORMAT:
-        You must return ONLY a JSON object. No other text or markdown after the JSON.
-        Format:
+        YOU MUST RETURN ONLY THE JSON OBJECT.
+        Structure:
         {{
-            "score": 0,
+            "overall_final_score": -2,
+            "overall_final_reasoning": "...",
+            "overall_rationale": "Detailed explanation of your decision-making process...",
             "strength_a": "...",
             "strength_b": "...",
             "weaknesses_a": ["[TAG1]"],
             "weaknesses_b": ["[TAG2]"],
-            "comparison": {{
-                "accuracy": {{"text": "...", "score": 0}},
-                "instructions": {{"text": "...", "score": 0}},
-                "tone": {{"text": "...", "score": 0}},
-                "overall": {{"text": "...", "score": 0}},
-                "naming_clarity": {{"text": "...", "score": 0}},
-                "organization_modularity": {{"text": "...", "score": 0}},
-                "error_handling": {{"text": "...", "score": 0}},
-                "documentation": {{"text": "...", "score": 0}},
-                "review_readiness": {{"text": "...", "score": 0}},
-                "logic_correctness": {{"text": "...", "score": 0}},
-                "honesty": {{"text": "...", "score": 0}},
-                "instruction_following": {{"text": "...", "score": 0}}
-            }},
-            "reasoning": "..."
+            "categories": [
+                {{"id": "accuracy", "text": "...", "score": 1}},
+                {{"id": "instructions", "text": "...", "score": -2}},
+                {{"id": "tone", "text": "...", "score": 3}},
+                {{"id": "overall", "text": "...", "score": -1}},
+                {{"id": "naming_clarity", "text": "...", "score": 2}},
+                {{"id": "organization_modularity", "text": "...", "score": -4}},
+                {{"id": "error_handling", "text": "...", "score": 1}},
+                {{"id": "documentation", "text": "...", "score": 2}},
+                {{"id": "review_readiness", "text": "...", "score": -1}},
+                {{"id": "logic_correctness", "text": "...", "score": 3}},
+                {{"id": "honesty", "text": "...", "score": -2}},
+                {{"id": "instruction_following", "text": "...", "score": 1}}
+            ]
         }}
         
-        CRITICAL: For each category in 'comparison', provide both a 'text' explanation and a numerical 'score' from -4 to 4.
+        CRITICAL: NO ZERO SCORES. EVERY category MUST have a non-zero score.
+        If you are unsure, you MUST pick the response that is slightly clearer or better formatted.
+        Choosing zero is a failure of the audit.
         """
 
         response = client.chat.completions.create(
@@ -191,33 +196,22 @@ def auto_evaluate_stream(evaluation_id, pre_scan_a=None, pre_scan_b=None):
             pre_json = full_content.split('{')[0].strip()
             eval_obj.ai_thought = pre_json if pre_json else "No thought tags found."
 
-        eval_obj.score = data.get('score', 0)
-        eval_obj.ai_logic = data.get('reasoning', '')
+        eval_obj.ai_logic = data.get('overall_final_reasoning', '')
+        eval_obj.overall_rationale = data.get('overall_rationale', '')
         eval_obj.strength_a = data.get('strength_a', '')
         eval_obj.strength_b = data.get('strength_b', '')
         
-        comp = data.get('comparison', {})
-        def save_comp(field_name, comp_key):
-            item = comp.get(comp_key, {})
-            if isinstance(item, dict):
-                setattr(eval_obj, f'comparison_{field_name}', item.get('text', ''))
-                setattr(eval_obj, f'score_{field_name}', item.get('score', 0))
-            else:
-                setattr(eval_obj, f'comparison_{field_name}', str(item))
-                setattr(eval_obj, f'score_{field_name}', 0)
-
-        save_comp('accuracy', 'accuracy')
-        save_comp('instructions', 'instructions')
-        save_comp('tone', 'tone')
-        save_comp('overall', 'overall')
-        save_comp('naming_clarity', 'naming_clarity')
-        save_comp('organization_modularity', 'organization_modularity')
-        save_comp('error_handling', 'error_handling')
-        save_comp('documentation', 'documentation')
-        save_comp('review_readiness', 'review_readiness')
-        save_comp('logic_correctness', 'logic_correctness')
-        save_comp('honesty', 'honesty')
-        save_comp('instruction_following', 'instruction_following')
+        # New List-based saving logic
+        category_list = data.get('categories', [])
+        for item in category_list:
+            cid = item.get('id')
+            if cid:
+                setattr(eval_obj, f'comparison_{cid}', item.get('text', ''))
+                # Force non-zero if the model still slips up
+                raw_score = item.get('score', 0)
+                if raw_score == 0:
+                    raw_score = 1 # Default to slight B if it refuses to choose
+                setattr(eval_obj, f'score_{cid}', raw_score)
         
         eval_obj.save()
 
@@ -245,9 +239,10 @@ def auto_evaluate_stream(evaluation_id, pre_scan_a=None, pre_scan_b=None):
             'status': 'success',
             'score': eval_obj.score,
             'ai_logic': eval_obj.ai_logic,
+            'overall_rationale': eval_obj.overall_rationale,
             'strength_a': eval_obj.strength_a,
             'strength_b': eval_obj.strength_b,
-            'comparison': comp,
+            'categories': category_list,
             'weaknesses_a': format_weaknesses(eval_obj.weaknesses_a),
             'weaknesses_b': format_weaknesses(eval_obj.weaknesses_b),
         }

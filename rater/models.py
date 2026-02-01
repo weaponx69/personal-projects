@@ -28,6 +28,7 @@ class Evaluation(models.Model):
     
     ai_logic = models.TextField(blank=True) # To store the AI's explanation
     ai_thought = models.TextField(blank=True) # To store the AI's internal reasoning/thinking
+    overall_rationale = models.TextField(blank=True) # AI's final rationale breakdown
     
     # Strengths
     strength_a = models.TextField(blank=True)
