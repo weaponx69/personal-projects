@@ -101,6 +101,8 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# 10. PERPLEXITY API INTEGRATION
-# This is where your custom automation key is stored
+# 10. API INTEGRATIONS
+# Perplexity API
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
+# Groq API
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")

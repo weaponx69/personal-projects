@@ -25,47 +25,31 @@ def evaluate(request):
             response_b=response_b
         )
 
-        # 2. Trigger the AI audit
-        success = auto_evaluate(eval_obj.id)
+        # 2. Capture pre-scanned data from frontend
+        scan_a_raw = request.POST.get('scan_data_a')
+        scan_b_raw = request.POST.get('scan_data_b')
+        
+        # Pre-populate Evaluation object if pre-scanned data exists
+        def populate_from_scan(eval_obj, raw_data, suffix):
+            if not raw_data: return
+            try:
+                data = json.loads(raw_data)
+                setattr(eval_obj, f'strength_{suffix}', data.get('strength', ''))
+                m2m = getattr(eval_obj, f'weaknesses_{suffix}')
+                for w in data.get('found_weaknesses', []):
+                    cat = WeaknessCategory.objects.filter(name=w['name']).first()
+                    if cat: m2m.add(cat)
+            except: pass
 
-        if success:
-            # Refresh to get updated data
-            eval_obj.refresh_from_db()
-            
-            def format_weaknesses(queryset):
-                return [
-                    {
-                        'name': w.name,
-                        'description': w.description,
-                        'examples': w.examples
-                    } for w in queryset.all()
-                ]
+        populate_from_scan(eval_obj, scan_a_raw, 'a')
+        populate_from_scan(eval_obj, scan_b_raw, 'b')
+        eval_obj.save()
 
-            return JsonResponse({
-                'status': 'success',
-                'score': eval_obj.score,
-                'ai_logic': eval_obj.ai_logic,
-                'strength_a': eval_obj.strength_a,
-                'strength_b': eval_obj.strength_b,
-                'comparison': {
-                    'accuracy': eval_obj.comparison_accuracy,
-                    'instructions': eval_obj.comparison_instructions,
-                    'tone': eval_obj.comparison_tone,
-                    'overall': eval_obj.comparison_overall,
-                    'naming_clarity': eval_obj.comparison_naming_clarity,
-                    'organization_modularity': eval_obj.comparison_organization_modularity,
-                    'error_handling': eval_obj.comparison_error_handling,
-                    'documentation': eval_obj.comparison_documentation,
-                    'review_readiness': eval_obj.comparison_review_readiness,
-                    'logic_correctness': eval_obj.comparison_logic_correctness,
-                    'honesty': eval_obj.comparison_honesty,
-                    'instruction_following': eval_obj.comparison_instruction_following,
-                },
-                'weaknesses_a': format_weaknesses(eval_obj.weaknesses_a),
-                'weaknesses_b': format_weaknesses(eval_obj.weaknesses_b),
-            })
-        else:
-            return JsonResponse({'status': 'error', 'message': 'AI Audit failed'}, status=500)
+        from .services import auto_evaluate_stream
+        return StreamingHttpResponse(
+            auto_evaluate_stream(eval_obj.id, pre_scan_a=scan_a_raw, pre_scan_b=scan_b_raw),
+            content_type='text/event-stream'
+        )
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=405)
 
@@ -83,6 +67,9 @@ def evaluate_prompt(request):
         })
     return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
 
+from django.http import StreamingHttpResponse
+from .services import scan_response_weaknesses_stream
+
 def scan_weaknesses(request):
     if request.method == 'POST':
         prompt_text = request.POST.get('prompt')
@@ -91,10 +78,8 @@ def scan_weaknesses(request):
         if not prompt_text or not response_text:
             return JsonResponse({'status': 'error', 'message': 'Missing text'}, status=400)
             
-        scan_results = scan_response_weaknesses(prompt_text, response_text)
-        return JsonResponse({
-            'status': 'success',
-            'strength': scan_results.get('strength', ''),
-            'found_weaknesses': scan_results.get('found_weaknesses', [])
-        })
+        return StreamingHttpResponse(
+            scan_response_weaknesses_stream(prompt_text, response_text),
+            content_type='text/event-stream'
+        )
     return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)

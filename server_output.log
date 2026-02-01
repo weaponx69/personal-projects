@@ -1,0 +1,3 @@
+Watching for file changes with StatReloader
+Forbidden (CSRF cookie not set.): /scan-weaknesses/
+[01/Feb/2026 09:12:52] "POST /scan-weaknesses/ HTTP/1.1" 403 2855

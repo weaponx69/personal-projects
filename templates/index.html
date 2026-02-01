@@ -299,7 +299,26 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 0.5rem;
             padding: 1rem;
-            transition: transform 0.2s;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite ease-in-out;
         }
 
         .criteria-item:hover {
@@ -320,6 +339,33 @@
             padding-top: 0.5rem;
             border-top: 1px solid rgba(239, 68, 68, 0.2);
             font-style: italic;
+        }
+
+        .comparison-score-scale {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 0.5rem;
+        }
+
+        .score-scale {
+            position: relative;
+            width: 100%;
+            height: 12px;
+            background: var(--border);
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            /* 8 visual partitions */
+            background-image:
+                linear-gradient(to right, transparent calc(12.5% - 1px), rgba(255, 255, 255, 0.15) calc(12.5% - 1px), rgba(255, 255, 255, 0.15) 12.5%, transparent 12.5%),
+                linear-gradient(to right, transparent calc(25% - 1px), rgba(255, 255, 255, 0.15) calc(25% - 1px), rgba(255, 255, 255, 0.15) 25%, transparent 25%),
+                linear-gradient(to right, transparent calc(37.5% - 1px), rgba(255, 255, 255, 0.15) calc(37.5% - 1px), rgba(255, 255, 255, 0.15) 37.5%, transparent 37.5%),
+                linear-gradient(to right, transparent calc(50% - 1px), var(--accent) calc(50% - 1px), var(--accent) 50%, transparent 50%),
+                linear-gradient(to right, transparent calc(62.5% - 1px), rgba(255, 255, 255, 0.15) calc(62.5% - 1px), rgba(255, 255, 255, 0.15) 62.5%, transparent 62.5%),
+                linear-gradient(to right, transparent calc(75% - 1px), rgba(255, 255, 255, 0.15) calc(75% - 1px), rgba(255, 255, 255, 0.15) 75%, transparent 75%),
+                linear-gradient(to right, transparent calc(87.5% - 1px), rgba(255, 255, 255, 0.15) calc(87.5% - 1px), rgba(255, 255, 255, 0.15) 87.5%, transparent 87.5%);
+            background-size: 100% 100%;
         }
     </style>
 </head>
@@ -343,6 +389,10 @@
                 {% csrf_token %}
 
                 <!-- Step 1: Prompt -->
+                <!-- Hidden scan data inputs -->
+                <input type="hidden" name="scan_data_a" id="scan_data_a">
+                <input type="hidden" name="scan_data_b" id="scan_data_b">
+
                 <div class="step-container active" id="step1">
                     <div class="form-group">
                         <label for="prompt">Step 1: The Original Prompt</label>
@@ -385,13 +435,14 @@
                             <button type="button" id="scanBtnA" class="btn-primary"
                                 style="max-width: 250px; padding: 0.5rem 1rem; font-size: 0.85rem;"
                                 onclick="handleScan('a')">Scan Response A for Weaknesses</button>
-                                            </div>
-                                            <!-- Strength Display (Step 2) -->
-                                            <div id="strengthDisplayA" class="strength-box" style="display: none; margin-bottom: 1.5rem; background: rgba(34, 197, 94, 0.1); border: 1px solid var(--success); border-radius: 0.5rem; padding: 1rem;">
-                                                <h4 style="color: var(--success); margin-bottom: 0.5rem;">Strengths Identified</h4>
-                                                <p id="strengthTextA" style="font-size: 0.95rem; color: var(--text-main);"></p>
-                                            </div>
-                                            <div class="criteria-grid" id="gridA">                            {% for cat in weakness_categories %}
+                        </div>
+                        <!-- Strength Display (Step 2) -->
+                        <div id="strengthDisplayA" class="strength-box"
+                            style="display: none; margin-bottom: 1.5rem; background: rgba(34, 197, 94, 0.1); border: 1px solid var(--success); border-radius: 0.5rem; padding: 1rem;">
+                            <h4 style="color: var(--success); margin-bottom: 0.5rem;">Strengths Identified</h4>
+                            <p id="strengthTextA" style="font-size: 0.95rem; color: var(--text-main);"></p>
+                        </div>
+                        <div class="criteria-grid" id="gridA"> {% for cat in weakness_categories %}
                             <div class="criteria-item" data-name="{{ cat.name }}">
                                 <p style="font-weight: 600; color: var(--error); font-size: 0.85rem;">{{ cat.name }}</p>
                                 <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.5rem;">{{
@@ -430,13 +481,14 @@
                             <button type="button" id="scanBtnB" class="btn-primary"
                                 style="max-width: 250px; padding: 0.5rem 1rem; font-size: 0.85rem;"
                                 onclick="handleScan('b')">Scan Response B for Weaknesses</button>
-                                            </div>
-                                            <!-- Strength Display (Step 3) -->
-                                            <div id="strengthDisplayB" class="strength-box" style="display: none; margin-bottom: 1.5rem; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--accent); border-radius: 0.5rem; padding: 1rem;">
-                                                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">Strengths Identified</h4>
-                                                <p id="strengthTextB" style="font-size: 0.95rem; color: var(--text-main);"></p>
-                                            </div>
-                                            <div class="criteria-grid" id="gridB">                            {% for cat in weakness_categories %}
+                        </div>
+                        <!-- Strength Display (Step 3) -->
+                        <div id="strengthDisplayB" class="strength-box"
+                            style="display: none; margin-bottom: 1.5rem; background: rgba(56, 189, 248, 0.1); border: 1px solid var(--accent); border-radius: 0.5rem; padding: 1rem;">
+                            <h4 style="color: var(--accent); margin-bottom: 0.5rem;">Strengths Identified</h4>
+                            <p id="strengthTextB" style="font-size: 0.95rem; color: var(--text-main);"></p>
+                        </div>
+                        <div class="criteria-grid" id="gridB"> {% for cat in weakness_categories %}
                             <div class="criteria-item" data-name="{{ cat.name }}">
                                 <p style="font-weight: 600; color: var(--error); font-size: 0.85rem;">{{ cat.name }}</p>
                                 <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.5rem;">{{
@@ -461,10 +513,23 @@
             </form>
 
             <div id="loader" class="loading-spinner">
-                <div id="loaderText" style="margin-bottom: 1rem;">Analyzing complex responses with Perplexity Sonar...
+                <div id="loaderText" style="margin-bottom: 1rem;">Analyzing complex responses...</div>
+
+                <!-- Thinking Trail UI -->
+                <div id="thinkingTrailContainer"
+                    style="display: none; width: 100%; max-width: 800px; margin: 1.5rem auto; background: #0a101f; border: 1px solid var(--border); border-radius: 0.5rem; overflow: hidden; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <div
+                        style="background: var(--border); padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; color: var(--accent); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <span style="letter-spacing: 1px;">&lambda; AI REASONING TRAIL</span>
+                        <span id="thinkingStatus" class="pulse" style="font-size: 0.7rem;">THINKING...</span>
+                    </div>
+                    <div id="thinkingTrail"
+                        style="padding: 1.25rem; font-size: 0.85rem; color: #94a3b8; font-family: 'Fira Code', 'Monaco', 'Courier New', monospace; max-height: 300px; overflow-y: auto; line-height: 1.6; white-space: pre-wrap; background: rgba(0,0,0,0.2);">
+                    </div>
                 </div>
-                <div style="font-size: 0.9rem; color: var(--text-sub);">This may take 30-60 seconds depending on size.
-                </div>
+
+                <div style="font-size: 0.8rem; color: var(--text-sub); margin-top: 1rem;">Local models may take longer
+                    to process large contexts.</div>
             </div>
         </section>
 
@@ -475,15 +540,19 @@
                 Audit Results</h2>
 
             <div class="score-scale-container" style="margin-bottom: 2rem;">
-                <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem; color: var(--text-sub);">
+                <div
+                    style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem; color: var(--text-sub);">
                     <span>&larr; A is Better</span>
                     <span>B is Better &rarr;</span>
                 </div>
-                <div class="score-scale" style="position: relative; width: 100%; height: 12px; background: var(--border); border-radius: 6px; margin-top: 0.5rem;">
-                    <div id="scoreMarker" style="position: absolute; top: -4px; width: 20px; height: 20px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); transform: translateX(-50%);"></div>
-                    <div style="position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background: var(--bg);"></div>
+                <div class="score-scale">
+                    <div id="scoreMarker"
+                        style="position: absolute; top: -4px; width: 20px; height: 20px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                    </div>
                 </div>
-                <div id="scoreValue" style="text-align: center; margin-top: 1rem; font-size: 1.2rem; font-weight: 600; color: var(--accent);">Score: 0</div>
+                <div id="scoreValue"
+                    style="text-align: center; margin-top: 1rem; font-size: 1.2rem; font-weight: 600; color: var(--accent);">
+                    Score: 0</div>
             </div>
 
             <!-- Strengths Grid -->
@@ -517,63 +586,269 @@
                 </h2>
 
                 <div class="comparison-row">
-                    <span class="comparison-label">Accuracy & Hallucination Check</span>
-                    <p id="compAccuracy" class="comparison-text"></p>
+                    <span class="comparison-label">Accuracy & Factuality</span>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compAccuracyMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compAccuracyValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compAccuracyText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row">
-                    <span class="comparison-label">Constraint & Instruction Adherence</span>
-                    <p id="compInstructions" class="comparison-text"></p>
+                    <span class="comparison-label">Instruction Following</span>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compInstructionsMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compInstructionsValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compInstructionsText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row">
-                    <span class="comparison-label">Tone, Formatting & Structure</span>
-                    <p id="compTone" class="comparison-text"></p>
+                    <span class="comparison-label">Tone & Formatting</span>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compToneMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compToneValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compToneText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
+
+
 
                 <div class="comparison-row">
                     <span class="comparison-label">Which response is better overall?</span>
-                    <p id="compOverall" class="comparison-text"></p>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compOverallMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compOverallValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compOverallText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row">
                     <span class="comparison-label">Which code has better naming and clarity?</span>
-                    <p id="compNamingClarity" class="comparison-text"></p>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compNamingClarityMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compNamingClarityValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compNamingClarityText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row">
                     <span class="comparison-label">Which code has better organization and modularity?</span>
-                    <p id="compOrganizationModularity" class="comparison-text"></p>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compOrganizationModularityMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compOrganizationModularityValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compOrganizationModularityText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row">
                     <span class="comparison-label">Which code has better error handling and robustness?</span>
-                    <p id="compErrorHandling" class="comparison-text"></p>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compErrorHandlingMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compErrorHandlingValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compErrorHandlingText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row">
                     <span class="comparison-label">Which code has better comments and documentation?</span>
-                    <p id="compDocumentation" class="comparison-text"></p>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compDocumentationMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compDocumentationValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compDocumentationText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row">
                     <span class="comparison-label">Which code is more ready for review/merge?</span>
-                    <p id="compReviewReadiness" class="comparison-text"></p>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compReviewReadinessMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compReviewReadinessValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compReviewReadinessText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row">
                     <span class="comparison-label">Which code has better logic and correctness?</span>
-                    <p id="compLogicCorrectness" class="comparison-text"></p>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compLogicCorrectnessMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compLogicCorrectnessValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compLogicCorrectnessText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row">
                     <span class="comparison-label">Which response is more honest about what it actually did?</span>
-                    <p id="compHonesty" class="comparison-text"></p>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compHonestyMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compHonestyValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compHonestyText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row">
                     <span class="comparison-label">Which response follows the instructions better?</span>
-                    <p id="compInstructionFollowing" class="comparison-text"></p>
+                    <div class="comparison-score-scale">
+                        <div
+                            style="display: flex; justify-content: space-between; font-weight: 600; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+                            <span>&larr; A is Better</span>
+                            <span>B is Better &rarr;</span>
+                        </div>
+                        <div class="score-scale">
+                            <div id="compInstructionFollowingMarker"
+                                style="position: absolute; top: -2px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            </div>
+                        </div>
+                        <div id="compInstructionFollowingValue"
+                            style="text-align: center; margin-top: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--accent);">
+                            Score: 0</div>
+                        <p id="compInstructionFollowingText"
+                            style="font-size: 0.9rem; color: var(--text-sub); margin-top: 0.5rem; font-style: italic;">
+                        </p>
+                    </div>
                 </div>
 
                 <div class="comparison-row" style="border-bottom: none;">
@@ -615,6 +890,45 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        // Helper function to update an individual comparison scale
+        function updateComparisonScale(categoryId, data) {
+            const marker = document.getElementById(categoryId + 'Marker');
+            const valueDisplay = document.getElementById(categoryId + 'Value');
+            const textDisplay = document.getElementById(categoryId + 'Text');
+
+            let score = 0;
+            let text = "";
+
+            if (typeof data === 'object' && data !== null) {
+                score = data.score || 0;
+                text = data.text || "";
+            } else if (typeof data === 'number') {
+                score = data;
+            }
+
+            if (!marker || !valueDisplay) {
+                console.warn(`Elements for categoryId ${categoryId} not found.`);
+                return;
+            }
+
+            const percentage = ((score + 4) / 8) * 100; // Updated to -4 to 4 range (8 partitions)
+            marker.style.left = `${percentage}%`;
+            valueDisplay.innerText = `Score: ${score}`;
+            if (textDisplay) textDisplay.innerText = text;
+
+            if (score < 0) {
+                marker.style.background = 'var(--error)';
+                marker.style.boxShadow = '0 0 8px var(--error)';
+            } else if (score > 0) {
+                marker.style.background = 'var(--success)';
+                marker.style.boxShadow = '0 0 8px var(--success)';
+            } else {
+                marker.style.background = 'var(--accent)';
+                marker.style.boxShadow = '0 0 8px var(--accent)';
+            }
+        }
+
+
         async function handlePromptEval() {
             const promptText = document.getElementById('prompt').value;
             if (!promptText) {
@@ -642,6 +956,10 @@
                     }
                 });
 
+                if (!response.ok) {
+                    const errorText = await response.text().catch(() => 'No error details');
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
                 const data = await response.json();
 
                 if (data.status === 'success') {
@@ -656,9 +974,10 @@
                     alert('Error: ' + data.message);
                 }
             } catch (err) {
-                alert('Connection error.');
+                alert('Prompt Check failed: ' + err.message);
                 console.error(err);
-            } finally {
+            }
+            finally {
                 btn.disabled = false;
                 loader.style.display = 'none';
             }
@@ -694,6 +1013,14 @@
             strengthDisplay.style.display = 'none';
             strengthText.innerText = '';
 
+            const thinkingTrail = document.getElementById('thinkingTrail');
+            const thinkingTrailContainer = document.getElementById('thinkingTrailContainer');
+            const thinkingStatus = document.getElementById('thinkingStatus');
+            thinkingTrail.innerText = '';
+            thinkingTrailContainer.style.display = 'block';
+            thinkingStatus.innerText = 'THINKING...';
+            thinkingStatus.classList.add('pulse');
+
             const formData = new FormData();
             formData.append('prompt', promptText);
             formData.append('response_text', responseText);
@@ -706,10 +1033,53 @@
                         'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                     }
                 });
-                const data = await response.json();
-                console.log(data);
 
-                if (data.status === 'success') {
+                if (!response.ok) {
+                    const statusText = response.statusText || 'No status text';
+                    alert(`Connection error: ${response.status} ${statusText}. Please ensure your server is running on port 8001.`);
+                    return;
+                }
+
+                // Read the stream
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let finalData = null;
+                let buffer = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep the last partial line in the buffer
+
+                    for (const line of lines) {
+                        if (line.startsWith('THOUGHT:')) {
+                            const text = line.substring(8);
+                            thinkingTrail.innerText += text;
+                            thinkingTrail.scrollTop = thinkingTrail.scrollHeight;
+                        } else if (line.startsWith('THOUGHT_END')) {
+                            thinkingStatus.innerText = 'FINISHED REASONING';
+                            thinkingStatus.classList.remove('pulse');
+                        } else if (line.startsWith('DATA:')) {
+                            try {
+                                finalData = JSON.parse(line.substring(5));
+                            } catch (e) {
+                                console.error("JSON Parse Error on chunk:", line.substring(5));
+                            }
+                        } else if (line.startsWith('ERROR:')) {
+                            throw new Error(line.substring(6));
+                        }
+                    }
+                }
+
+                if (finalData) {
+                    const data = finalData;
+
+                    // Store for final audit (avoid re-scanning)
+                    document.getElementById('scan_data_' + responseType).value = JSON.stringify(data);
+
                     // Display Strengths
                     if (data.strength) {
                         strengthText.innerText = data.strength;
@@ -719,7 +1089,6 @@
                     }
 
                     data.found_weaknesses.forEach(w => {
-                        // Find the item in the grid by data-name
                         const item = grid.querySelector(`.criteria-item[data-name^="${w.name}"]`);
                         if (item) {
                             item.classList.add('found');
@@ -734,18 +1103,16 @@
                     if (data.found_weaknesses.length === 0) {
                         alert("Scan complete: No weaknesses from the current criteria were found in this response.");
                     } else {
-                        // Scroll slightly to the grid if not already in view
                         grid.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     }
-                } else {
-                    alert('Error: ' + data.message);
                 }
             } catch (err) {
-                alert('Connection error.');
+                alert('Scan failed: ' + err.message);
                 console.error(err);
             } finally {
                 btn.disabled = false;
                 loader.style.display = 'none';
+                thinkingTrailContainer.style.display = 'none';
             }
         }
 
@@ -759,28 +1126,77 @@
             const indicators = document.querySelector('.step-indicator');
 
             btn.disabled = true;
-            loaderText.innerText = "Analyzing complex responses with Perplexity Sonar...";
+            loaderText.innerText = "Analyzing responses with Ollama DeepSeek-R1 (8B)...";
             loader.style.display = 'block';
+            loader.scrollIntoView({ behavior: 'smooth', block: 'center' });
             results.style.display = 'none';
             document.getElementById('step3').classList.remove('active');
             indicators.style.display = 'none';
 
             const formData = new FormData(form);
 
-            try {
-                const data = await response.json();
-                console.log(data);
+            const thinkingTrail = document.getElementById('thinkingTrail');
+            const thinkingTrailContainer = document.getElementById('thinkingTrailContainer');
+            const thinkingStatus = document.getElementById('thinkingStatus');
+            thinkingTrail.innerText = '';
+            thinkingTrailContainer.style.display = 'block';
+            thinkingStatus.innerText = 'THINKING...';
+            thinkingStatus.classList.add('pulse');
 
-                if (data.status === 'success') {
+            try {
+                const response = await fetch('/evaluate/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+
+                // Check if the network request was successful (status code 200-299)
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let finalData = null;
+                let buffer = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('THOUGHT:')) {
+                            thinkingTrail.innerText += line.substring(8);
+                            thinkingTrail.scrollTop = thinkingTrail.scrollHeight;
+                        } else if (line.startsWith('THOUGHT_END')) {
+                            thinkingStatus.innerText = 'FINISHED REASONING';
+                            thinkingStatus.classList.remove('pulse');
+                        } else if (line.startsWith('DATA:')) {
+                            finalData = JSON.parse(line.substring(5));
+                        } else if (line.startsWith('ERROR:')) {
+                            throw new Error(line.substring(6));
+                        }
+                    }
+                }
+
+                if (finalData) {
+                    const data = finalData;
                     // Score Scale
                     const score = data.score;
                     const scoreMarker = document.getElementById('scoreMarker');
                     const scoreValue = document.getElementById('scoreValue');
-                    
-                    // Calculate position from -5 to 5 on a 0-100% scale
-                    const percentage = ((score + 5) / 10) * 100;
+
+                    // Calculate position from -4 to 4 on a 0-100% scale
+                    const percentage = ((score + 4) / 8) * 100;
                     scoreMarker.style.left = `${percentage}%`;
-                    
+
                     // Update color and text
                     scoreValue.innerText = `Comparison Score: ${score}`;
                     if (score < 0) {
@@ -799,18 +1215,20 @@
                     document.getElementById('strengthB').innerText = data.strength_b || 'No significant strengths identified.';
 
                     // Comparison Summaries
-                    document.getElementById('compAccuracy').innerText = data.comparison.accuracy || 'N/A';
-                    document.getElementById('compInstructions').innerText = data.comparison.instructions || 'N/A';
-                    document.getElementById('compTone').innerText = data.comparison.tone || 'N/A';
-                    document.getElementById('compOverall').innerText = data.comparison.overall || 'N/A';
-                    document.getElementById('compNamingClarity').innerText = data.comparison.naming_clarity || 'N/A';
-                    document.getElementById('compOrganizationModularity').innerText = data.comparison.organization_modularity || 'N/A';
-                    document.getElementById('compErrorHandling').innerText = data.comparison.error_handling || 'N/A';
-                    document.getElementById('compDocumentation').innerText = data.comparison.documentation || 'N/A';
-                    document.getElementById('compReviewReadiness').innerText = data.comparison.review_readiness || 'N/A';
-                    document.getElementById('compLogicCorrectness').innerText = data.comparison.logic_correctness || 'N/A';
-                    document.getElementById('compHonesty').innerText = data.comparison.honesty || 'N/A';
-                    document.getElementById('compInstructionFollowing').innerText = data.comparison.instruction_following || 'N/A';
+
+                    // Update Comparison Scales
+                    updateComparisonScale('compOverall', data.comparison.overall);
+                    updateComparisonScale('compAccuracy', data.comparison.accuracy);
+                    updateComparisonScale('compInstructions', data.comparison.instructions);
+                    updateComparisonScale('compTone', data.comparison.tone);
+                    updateComparisonScale('compNamingClarity', data.comparison.naming_clarity);
+                    updateComparisonScale('compOrganizationModularity', data.comparison.organization_modularity);
+                    updateComparisonScale('compErrorHandling', data.comparison.error_handling);
+                    updateComparisonScale('compDocumentation', data.comparison.documentation);
+                    updateComparisonScale('compReviewReadiness', data.comparison.review_readiness);
+                    updateComparisonScale('compLogicCorrectness', data.comparison.logic_correctness);
+                    updateComparisonScale('compHonesty', data.comparison.honesty);
+                    updateComparisonScale('compInstructionFollowing', data.comparison.instruction_following);
 
                     // Final Logic
                     document.getElementById('aiLogic').innerText = data.ai_logic;
@@ -836,19 +1254,16 @@
 
                     results.style.display = 'block';
                     results.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                    alert('Error: ' + data.message);
-                    goToStep(3);
-                    indicators.style.display = 'flex';
                 }
             } catch (err) {
-                alert('An error occurred during audit. Please ensure your API key is correctly set in .env.');
-                console.error(err);
+                alert('Audit failed: ' + err.message);
+                console.error("Error caught in submit handler:", err);
                 goToStep(3);
                 indicators.style.display = 'flex';
             } finally {
                 btn.disabled = false;
                 loader.style.display = 'none';
+                thinkingTrailContainer.style.display = 'none';
             }
         });
     </script>

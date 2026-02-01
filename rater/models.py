@@ -27,12 +27,13 @@ class Evaluation(models.Model):
     weaknesses_b = models.ManyToManyField(WeaknessCategory, related_name='b_flaws', blank=True)
     
     ai_logic = models.TextField(blank=True) # To store the AI's explanation
+    ai_thought = models.TextField(blank=True) # To store the AI's internal reasoning/thinking
     
     # Strengths
     strength_a = models.TextField(blank=True)
     strength_b = models.TextField(blank=True)
     
-    # Comparison Summaries
+    # Comparison Summaries (Text)
     comparison_accuracy = models.TextField(blank=True)
     comparison_instructions = models.TextField(blank=True)
     comparison_tone = models.TextField(blank=True)
@@ -45,3 +46,17 @@ class Evaluation(models.Model):
     comparison_logic_correctness = models.TextField(blank=True)
     comparison_honesty = models.TextField(blank=True)
     comparison_instruction_following = models.TextField(blank=True)
+
+    # Comparison Scores (-4 to 4)
+    score_accuracy = models.IntegerField(default=0)
+    score_instructions = models.IntegerField(default=0)
+    score_tone = models.IntegerField(default=0)
+    score_overall = models.IntegerField(default=0)
+    score_naming_clarity = models.IntegerField(default=0)
+    score_organization_modularity = models.IntegerField(default=0)
+    score_error_handling = models.IntegerField(default=0)
+    score_documentation = models.IntegerField(default=0)
+    score_review_readiness = models.IntegerField(default=0)
+    score_logic_correctness = models.IntegerField(default=0)
+    score_honesty = models.IntegerField(default=0)
+    score_instruction_following = models.IntegerField(default=0)
